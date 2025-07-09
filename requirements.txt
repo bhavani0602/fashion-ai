@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+pillow
+mediapipe  
+numpy  
+opencv-python  
+cloudinary
+

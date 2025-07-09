@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up - Fashion AI</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #ff9a9e, #fad0c4);
+        }
+        .signup-container {
+            background: white;
+            padding: 35px;
+            border-radius: 15px;
+            box-shadow: 0px 10px 25px rgba(0, 0, 0, 0.1);
+            width: 380px;
+            text-align: center;
+            transition: 0.3s;
+        }
+        .signup-container h2 {
+            margin-bottom: 18px;
+            font-size: 24px;
+            color: #333;
+            font-weight: 600;
+        }
+        .input-box {
+            position: relative;
+            margin-bottom: 20px;
+        }
+        .input-box input {
+            width: 100%;
+            padding: 14px;
+            padding-left: 50px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            outline: none;
+            transition: 0.3s;
+            background: #f9f9f9;
+        }
+        .input-box input:focus {
+            border-color: #ff6b81;
+            box-shadow: 0px 0px 10px rgba(255, 107, 129, 0.3);
+        }
+        .input-box i {
+            position: absolute;
+            left: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 18px;
+            color: #888;
+        }
+        .btn {
+            display: block;
+            background: #ff6b81;
+            color: white;
+            border: none;
+            padding: 12px;
+            width: 100%;
+            border-radius: 8px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: 0.3s;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+        .btn:hover {
+            background: #e63950;
+        }
+        .google-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #fff;
+            color: #555;
+            border: 1px solid #ddd;
+            padding: 12px;
+            width: 100%;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: 0.3s;
+            font-weight: bold;
+            margin-top: 15px;
+        }
+        .google-btn img {
+            width: 22px;
+            margin-right: 10px;
+        }
+        .google-btn:hover {
+            background: #f0f0f0;
+        }
+        .login-link {
+            margin-top: 20px;
+            font-size: 14px;
+        }
+        .login-link a {
+            color: #ff6b81;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .login-link a:hover {
+            text-decoration: underline;
+        }
+        .error-message {
+            color: #e63950;
+            font-size: 13px;
+            margin-top: -15px;
+            margin-bottom: 15px;
+            text-align: left;
+            padding-left: 50px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="signup-container">
+        <h2>Join Fashion AI</h2>
+
+        <button class="google-btn" onclick="fakeGoogleSignup()">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/2048px-Google_%22G%22_logo.svg.png" alt="Google Logo">
+            Sign up with Google
+        </button>
+
+        <p style="margin: 12px 0; font-size: 14px; color: #777;">or sign up with your email</p>
+
+        <div class="input-box">
+            <i class="fas fa-user"></i>
+            <input type="text" id="username" placeholder="Username" required>
+            <div id="username-error" class="error-message"></div>
+        </div>
+        <div class="input-box">
+            <i class="fas fa-lock"></i>
+            <input type="password" id="password" placeholder="Password" required>
+            <div id="password-error" class="error-message"></div>
+        </div>
+        <button class="btn" id="signup-btn">Sign Up</button>
+
+        <p class="login-link">Already have an account? <a href="login.html">Login here</a></p>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const signupBtn = document.getElementById('signup-btn');
+            const usernameInput = document.getElementById('username');
+            const passwordInput = document.getElementById('password');
+            const usernameError = document.getElementById('username-error');
+            const passwordError = document.getElementById('password-error');
+
+            // Validate username on input
+            usernameInput.addEventListener('input', function() {
+                if (this.value.trim().length < 4) {
+                    usernameError.textContent = 'Username must be at least 4 characters';
+                    usernameError.style.display = 'block';
+                } else {
+                    usernameError.style.display = 'none';
+                }
+            });
+
+            // Validate password on input
+            passwordInput.addEventListener('input', function() {
+                if (this.value.trim().length < 6) {
+                    passwordError.textContent = 'Password must be at least 6 characters';
+                    passwordError.style.display = 'block';
+                } else {
+                    passwordError.style.display = 'none';
+                }
+            });
+
+            // Signup function
+            signupBtn.addEventListener('click', signup);
+
+            function signup() {
+                const username = usernameInput.value.trim();
+                const password = passwordInput.value.trim();
+
+                // Validate inputs
+                if (username === '') {
+                    usernameError.textContent = 'Username is required';
+                    usernameError.style.display = 'block';
+                    return;
+                }
+
+                if (password === '') {
+                    passwordError.textContent = 'Password is required';
+                    passwordError.style.display = 'block';
+                    return;
+                }
+
+                if (username.length < 4) {
+                    usernameError.textContent = 'Username must be at least 4 characters';
+                    usernameError.style.display = 'block';
+                    return;
+                }
+
+                if (password.length < 6) {
+                    passwordError.textContent = 'Password must be at least 6 characters';
+                    passwordError.style.display = 'block';
+                    return;
+                }
+
+                // Check if user already exists
+                if (localStorage.getItem(`fashionAI_user_${username}`)) {
+                    usernameError.textContent = 'Username already exists';
+                    usernameError.style.display = 'block';
+                    return;
+                }
+
+                // Store user in localStorage
+                localStorage.setItem(`fashionAI_user_${username}`, password);
+                
+                // Optionally store username for display purposes
+                localStorage.setItem('fashionAI_lastRegistered', username);
+                
+                alert('Account created successfully! Redirecting to login...');
+                window.location.href = 'login.html';
+            }
+
+            function fakeGoogleSignup() {
+                alert("Google Sign-up coming soon!");
+            }
+
+            // Redirect if already logged in
+            if (localStorage.getItem("fashionAI_loggedIn") === "true") {
+                window.location.href = "index.html";
+            }
+
+            // Handle Enter key press
+            document.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    signup();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

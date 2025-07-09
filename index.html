@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fashion AI - Upload Image</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes floating {
+            0% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0); }
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        body {
+            background-color: #990F02;
+            position: relative;
+            overflow-x: hidden;
+        }
+        .floating-paper {
+            position: absolute;
+            width: 250px;
+            opacity: 0.8;
+            animation: floating 5s ease-in-out infinite alternate;
+            z-index: 1;
+        }
+        .floating-image {
+            position: absolute;
+            width: 150px;
+            opacity: 0.9;
+            z-index: 1;
+            animation: floating 6s ease-in-out infinite alternate;
+        }
+        .upload-container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            position: relative;
+            z-index: 10;
+            transition: all 0.3s ease;
+        }
+        #previewImage {
+            max-width: 100%;
+            max-height: 300px;
+            margin: 10px auto;
+            display: none;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .drag-active {
+            border: 2px dashed #990F02 !important;
+            background-color: #fff8f8 !important;
+        }
+        .loading-dots {
+            display: inline-flex;
+            align-items: center;
+        }
+        .loading-dots span {
+            width: 8px;
+            height: 8px;
+            margin: 0 2px;
+            background-color: currentColor;
+            border-radius: 50%;
+            display: inline-block;
+            animation: pulse 1.4s infinite ease-in-out;
+        }
+        .loading-dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        .loading-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        .measurement-badge {
+            transition: transform 0.2s ease;
+        }
+        .measurement-badge:hover {
+            transform: translateY(-3px);
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen relative">
+
+    <!-- Paper Images at Top Corners -->
+    <img src="fashion images/paper 1.png" class="floating-paper" style="top: -70px; left: -40px; width: 400px; height: auto;">
+    <img src="fashion images/paper 2.png" class="floating-paper" style="top: 0; right: 0; width: 400px; height: auto;">
+
+    <!-- User Account Section (only shown if logged in) -->
+    <div id="user-account" class="absolute top-4 right-6 flex items-center space-x-3 z-50" style="display: none;">
+        <i class="fas fa-user-circle text-white text-3xl"></i>
+        <button id="logout-btn" class="bg-yellow-200 text-gray-800 px-3 py-1 rounded-lg hover:bg-yellow-300 transition">
+            Logout
+        </button>
+    </div>
+
+    <!-- Fashion AI Upload Box -->
+    <div class="upload-container w-96 relative" 
+         id="uploadArea" 
+         ondrop="handleDrop(event)" 
+         ondragover="handleDragOver(event)" 
+         ondragleave="handleDragLeave(event)">
+        
+        <img src="fashion images/logo img.jpg" alt="Fashion AI Logo" class="mx-auto mb-4 w-20 h-20 rounded-full object-cover border-2 border-white shadow-md">
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">Fashion AI</h1>
+        <p class="text-gray-700 mb-4">Drag & drop, paste (Ctrl+V), or select an image</p>
+        <p class="text-gray-500 text-sm mb-4">Supported formats: PNG, JPG, JPEG, WEBP</p>
+
+        <img id="previewImage" alt="Preview" class="rounded-lg">
+        
+        <!-- Gender Selection -->
+        <div class="mb-4">
+            <p class="text-gray-700 mb-2">Select your gender:</p>
+            <div class="flex justify-center space-x-4">
+                <button onclick="setGender('female')" 
+                        class="gender-btn bg-pink-100 text-pink-800 px-4 py-2 rounded-lg hover:bg-pink-200 transition">
+                    <i class="fas fa-venus mr-2"></i>Female
+                </button>
+                <button onclick="setGender('male')" 
+                        class="gender-btn bg-blue-100 text-blue-800 px-4 py-2 rounded-lg hover:bg-blue-200 transition">
+                    <i class="fas fa-mars mr-2"></i>Male
+                </button>
+            </div>
+        </div>
+
+        <input type="file" id="imageUpload" class="hidden" accept=".png,.jpg,.jpeg,.webp">
+        <button id="uploadButton" 
+                onclick="document.getElementById('imageUpload').click()" 
+                class="bg-red-600 text-white px-6 py-3 rounded-lg shadow-md hover:shadow-lg hover:scale-105 transition-transform duration-300 mb-4 font-medium" 
+                disabled>
+            <i class="fas fa-cloud-upload-alt mr-2"></i> Upload Image
+        </button>
+        
+        <div id="responseMessage" class="mt-4 p-4 bg-gray-100 rounded-lg text-left hidden"></div>
+        
+        <!-- Loading overlay -->
+        <div id="loadingOverlay" class="absolute inset-0 bg-white bg-opacity-90 flex flex-col items-center justify-center rounded-lg hidden z-20">
+            <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-red-600 mb-4"></div>
+            <p class="text-gray-700 font-medium">
+                <span class="loading-dots">
+                    Analyzing your body type
+                    <span></span><span></span><span></span>
+                </span>
+            </p>
+            <p class="text-gray-500 text-sm mt-2">This may take a few moments...</p>
+        </div>
+    </div>
+
+    <!-- Floating Images -->
+    <img src="fashion images/boots img.png" class="floating-image" style="bottom: 0%; left: 17%; width: 250px; height: auto;">
+    <img src="fashion images/outfit img.png" class="floating-image" style="top: -4%; right: 10%; width: 200px;">
+    <img src="fashion images/ear rings img.png" class="floating-image" style="bottom: 10%; right: 25%; width: 150px;">
+    <img src="fashion images/lahenga img.png" class="floating-image" style="top: 3%; left: 10%; width: 200px; height: auto;">
+    <img src="fashion images/dress img.png" class="floating-image" style="bottom: 1%; right: 5%; width: 200px;">
+    
+    <script>
+        let activeSessionId = null;
+        let selectedGender = null;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if user is logged in (optional feature)
+            if (localStorage.getItem("fashionAI_loggedIn") === "true") {
+                document.getElementById('user-account').style.display = 'flex';
+                document.getElementById('logout-btn').addEventListener('click', function() {
+                    localStorage.removeItem("fashionAI_loggedIn");
+                    window.location.href = "login.html";
+                });
+            }
+            
+            document.getElementById('imageUpload').addEventListener('change', function() {
+                if (this.files.length > 0) {
+                    console.log("Selected file:", this.files[0].name, "Size:", this.files[0].size, "Type:", this.files[0].type);
+                    if (!activeSessionId) {
+                        handleFileSelection(this.files[0]);
+                    } else {
+                        showError("Please close the current session before uploading a new image.");
+                    }
+                }
+            });
+            
+            document.addEventListener('paste', handlePaste);
+        });
+
+        function setGender(gender) {
+            selectedGender = gender;
+            document.querySelectorAll('.gender-btn').forEach(btn => {
+                btn.classList.remove('ring-2', 'ring-offset-2', 'ring-red-500');
+            });
+            event.target.classList.add('ring-2', 'ring-offset-2', 'ring-red-500');
+            document.getElementById('uploadButton').disabled = false;
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (!activeSessionId) {
+                document.getElementById('uploadArea').classList.add('drag-active');
+            }
+        }
+
+        function handleDragLeave(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            document.getElementById('uploadArea').classList.remove('drag-active');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            document.getElementById('uploadArea').classList.remove('drag-active');
+            
+            if (activeSessionId) {
+                showError("Please close the current session before uploading a new image.");
+                return;
+            }
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0 && files[0].type.startsWith('image/')) {
+                console.log("Dropped file:", files[0].name, "Size:", files[0].size, "Type:", files[0].type);
+                handleFileSelection(files[0]);
+            } else {
+                showError("Please upload an image file (PNG, JPG, JPEG, or WEBP)");
+            }
+        }
+
+        function handlePaste(e) {
+            if (activeSessionId) {
+                showError("Please close the current session before uploading a new image.");
+                return;
+            }
+            
+            const items = (e.clipboardData || window.clipboardData).items;
+            for (const item of items) {
+                if (item.kind === 'file' && item.type.startsWith('image/')) {
+                    const blob = item.getAsFile();
+                    console.log("Pasted image:", blob.name, "Size:", blob.size, "Type:", blob.type);
+                    handleFileSelection(blob);
+                    break;
+                }
+            }
+        }
+
+        function handleFileSelection(file) {
+            const preview = document.getElementById('previewImage');
+            const responseMessage = document.getElementById('responseMessage');
+            
+            responseMessage.classList.add('hidden');
+            
+            // Validate file type
+            const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
+            if (!validTypes.includes(file.type.toLowerCase())) {
+                showError(`Unsupported file type: ${file.type}. Please upload a JPEG, PNG, or WEBP image.`);
+                return;
+            }
+            
+            // Validate file size (5MB max)
+            if (file.size > 5 * 1024 * 1024) {
+                showError("Image is too large (max 5MB). Please upload a smaller image.");
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                preview.src = e.target.result;
+                preview.style.display = 'block';
+                uploadImage(file);
+            };
+            reader.onerror = function() {
+                showError("Error reading the image file. Please try another image.");
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function showError(message) {
+            const responseMessage = document.getElementById('responseMessage');
+            responseMessage.innerHTML = `
+                <div class="bg-red-50 border-l-4 border-red-500 p-4">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-exclamation-circle text-red-500"></i>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-red-700">${message}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            responseMessage.classList.remove('hidden');
+            
+            // Auto-hide error after 5 seconds
+            setTimeout(() => {
+                responseMessage.classList.add('hidden');
+            }, 5000);
+        }
+
+        function showLoading() {
+            document.getElementById('loadingOverlay').classList.remove('hidden');
+            document.getElementById('uploadArea').style.pointerEvents = 'none';
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingOverlay').classList.add('hidden');
+            document.getElementById('uploadArea').style.pointerEvents = 'auto';
+        }
+
+        async function uploadImage(file) {
+    if (!selectedGender) {
+        showError("Please select a gender before uploading.");
+        hideLoading();
+        return;
+    }
+
+    showLoading();
+    const responseMessage = document.getElementById("responseMessage");
+    
+    try {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("gender", selectedGender); // Ensure gender is sent as "male" or "female"
+
+        // Debug: Log FormData contents
+        for (let pair of formData.entries()) {
+            console.log(`${pair[0]}: ${pair[1]}`);
+        }
+
+        const response = await fetch("http://127.0.0.1:8000/upload", {
+            method: "POST",
+            body: formData
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.detail || "Failed to process image");
+        }
+
+        const result = await response.json();
+        if (!result.measurements || !result.measurements.session_id) {
+            throw new Error("Invalid response from server: missing measurements or session_id");
+        }
+
+        activeSessionId = result.measurements.session_id;
+        displayResults(result);
+        
+    } catch (error) {
+        console.error("Upload error:", error);
+        showError(error.message || "An error occurred while processing your image. Please try again.");
+    } finally {
+        hideLoading();
+    }
+}
+        function displayResults(result) {
+            const responseMessage = document.getElementById("responseMessage");
+            
+            const genderIcon = result.gender === "male" ? "👔" : 
+                             result.gender === "female" ? "👗" : "👤";
+            
+            // Get body type color based on type
+            const bodyTypeColors = {
+                'hourglass': 'from-purple-500 to-pink-500',
+                'pear': 'from-green-500 to-teal-500',
+                'apple': 'from-red-500 to-orange-500',
+                'rectangle': 'from-blue-500 to-cyan-500',
+                'inverted triangle': 'from-indigo-500 to-blue-500'
+            };
+            
+            const bodyTypeColor = bodyTypeColors[result.body_type.toLowerCase()] || 'from-gray-500 to-gray-700';
+            
+            responseMessage.innerHTML = `
+                <div class="space-y-6">
+                    <div class="bg-gradient-to-r ${bodyTypeColor} text-white p-4 rounded-lg shadow-md">
+                        <div class="flex items-center">
+                            <span class="text-4xl mr-3">${genderIcon}</span>
+                            <div>
+                                <h3 class="font-bold text-xl">${result.body_type} Body Type</h3>
+                                <p class="text-white text-opacity-90">${result.body_description}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-3 gap-3">
+                        <div class="measurement-badge bg-blue-50 p-3 rounded-lg border border-blue-100">
+                            <p class="font-semibold text-blue-800 text-sm">Shoulder</p>
+                            <p class="text-xl font-bold text-blue-600">${result.measurements.shoulder_width.toFixed(1)} cm</p>
+                        </div>
+                        <div class="measurement-badge bg-green-50 p-3 rounded-lg border border-green-100">
+                            <p class="font-semibold text-green-800 text-sm">Waist</p>
+                            <p class="text-xl font-bold text-green-600">${result.measurements.waist_width.toFixed(1)} cm</p>
+                        </div>
+                        <div class="measurement-badge bg-purple-50 p-3 rounded-lg border border-purple-100">
+                            <p class="font-semibold text-purple-800 text-sm">Hip</p>
+                            <p class="text-xl font-bold text-purple-600">${result.measurements.hip_width.toFixed(1)} cm</p>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div class="bg-green-50 p-4 rounded-lg border border-green-100">
+                            <h4 class="font-bold text-green-800 flex items-center">
+                                <i class="fas fa-thumbs-up mr-2"></i> Recommended Styles
+                            </h4>
+                            <ul class="mt-2 space-y-2">
+                                ${result.recommend.map(item => `
+                                    <li class="flex items-start">
+                                        <i class="fas fa-check text-green-500 mt-1 mr-2 text-sm"></i>
+                                        <span class="text-gray-700">${item}</span>
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        </div>
+                        
+                        <div class="bg-red-50 p-4 rounded-lg border border-red-100">
+                            <h4 class="font-bold text-red-800 flex items-center">
+                                <i class="fas fa-ban mr-2"></i> Styles to Avoid
+                            </h4>
+                            <ul class="mt-2 space-y-2">
+                                ${result.avoid.map(item => `
+                                    <li class="flex items-start">
+                                        <i class="fas fa-times text-red-500 mt-1 mr-2 text-sm"></i>
+                                        <span class="text-gray-700">${item}</span>
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 pt-4 border-t border-gray-200">
+                        <button onclick="closeSession('${result.measurements.session_id}')" 
+                                class="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg transition flex items-center justify-center">
+                            <i class="fas fa-sync-alt mr-2"></i> Analyze New Image
+                        </button>
+                    </div>
+                </div>
+            `;
+            responseMessage.className = "mt-4 p-6 bg-white rounded-lg shadow-lg text-left";
+            responseMessage.classList.remove('hidden');
+        }
+
+        async function closeSession(sessionId) {
+            const responseMessage = document.getElementById('responseMessage');
+            responseMessage.innerHTML = `
+                <div class="text-center py-4">
+                    <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-red-600 mx-auto mb-3"></div>
+                    <p class="text-gray-700">Clearing session...</p>
+                </div>
+            `;
+            
+            try {
+                const response = await fetch(`http://127.0.0.1:8000/close-session/${sessionId}`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    }
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || `Failed to close session (status: ${response.status})`);
+                }
+
+                const result = await response.json();
+                console.log("Close session response:", result);
+
+                document.getElementById('previewImage').style.display = 'none';
+                document.getElementById('imageUpload').value = '';
+                
+                responseMessage.innerHTML = `
+                    <div class="bg-green-50 border-l-4 border-green-500 p-4">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-check-circle text-green-500"></i>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm text-green-700">Session cleared. You can now upload a new image.</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                activeSessionId = null;
+                selectedGender = null;
+                document.getElementById('uploadButton').disabled = true;
+                document.querySelectorAll('.gender-btn').forEach(btn => {
+                    btn.classList.remove('ring-2', 'ring-offset-2', 'ring-red-500');
+                });
+                
+                setTimeout(() => {
+                    responseMessage.classList.add('hidden');
+                }, 3000);
+                
+            } catch (error) {
+                console.error("Error closing session:", error.message);
+                showError(`Failed to close session: ${error.message}. Please try again or refresh the page.`);
+            }
+        }
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'929abcbb1f907b94',t:'MTc0MzUzODMwMy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
